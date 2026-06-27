@@ -97,16 +97,16 @@ if st.button("Run Extraction", type="primary"):
         st.json(result.model_dump(mode="json"))
         artifacts = ExportBundle().render_all(result)
         download_columns = st.columns(3)
-        mime_types = {
-            "extracted_quote.json": "application/json",
-            "quote_table.csv": "text/csv",
-            "report.html": "text/html",
-        }
         for column, (filename, payload) in zip(download_columns, artifacts.items()):
+            mime_type = {
+                ".json": "application/json",
+                ".csv": "text/csv",
+                ".html": "text/html",
+            }[f".{filename.rsplit('.', 1)[-1]}"]
             with column:
                 st.download_button(
                     f"Download {filename}",
                     data=payload.encode("utf-8"),
                     file_name=filename,
-                    mime=mime_types[filename],
+                    mime=mime_type,
                 )

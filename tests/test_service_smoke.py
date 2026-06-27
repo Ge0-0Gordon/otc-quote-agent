@@ -174,7 +174,7 @@ def test_service_writes_all_artifacts(tmp_path) -> None:
     )
 
     assert {path.name for path in tmp_path.iterdir()} == {
-        "extracted_quote.json",
+        "extracted_quote-snowball.json",
         "quote_table.csv",
         "report.html",
     }

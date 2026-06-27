@@ -16,7 +16,15 @@ class ExportBundle:
         self.exporters = (JSONExporter(), CSVExporter(), HTMLExporter())
 
     def render_all(self, result: ExtractionResult) -> dict[str, str]:
-        return {exporter.filename: exporter.render(result) for exporter in self.exporters}
+        rendered: dict[str, str] = {}
+        for exporter in self.exporters:
+            filename = (
+                exporter.filename_for(result)
+                if isinstance(exporter, JSONExporter)
+                else exporter.filename
+            )
+            rendered[filename] = exporter.render(result)
+        return rendered
 
     def export(self, result: ExtractionResult, output_dir: str | Path) -> dict[str, Path]:
         target_dir = Path(output_dir)

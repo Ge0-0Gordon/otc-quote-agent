@@ -30,7 +30,7 @@ def test_export_bundle_writes_required_files(tmp_path) -> None:
     paths = ExportBundle().export(make_result(), tmp_path)
 
     assert set(paths) == {
-        "extracted_quote.json",
+        "extracted_quote-snowball.json",
         "quote_table.csv",
         "report.html",
     }
@@ -39,7 +39,7 @@ def test_export_bundle_writes_required_files(tmp_path) -> None:
 
 def test_json_keeps_decimal_percentage_and_reports_show_percent() -> None:
     rendered = ExportBundle().render_all(make_result())
-    payload = json.loads(rendered["extracted_quote.json"])
+    payload = json.loads(rendered["extracted_quote-snowball.json"])
     csv_row = next(csv.DictReader(StringIO(rendered["quote_table.csv"])))
 
     assert payload["quote"]["knock_out_barrier"] == 1.03
@@ -60,4 +60,4 @@ def test_unsupported_report_contains_no_quote_fields() -> None:
     rendered = ExportBundle().render_all(result)
 
     assert "No supported product schema was applied" in rendered["report.html"]
-    assert json.loads(rendered["extracted_quote.json"])["quote"] is None
+    assert json.loads(rendered["extracted_quote-unsupported.json"])["quote"] is None

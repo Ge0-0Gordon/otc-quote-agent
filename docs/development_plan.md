@@ -13,7 +13,7 @@
 - 提供 Streamlit、CLI 和 Docker Compose。
 - 提供三份中英文样例，故意保留部分缺失字段。
 - 每次成功运行生成：
-  - `extracted_quote.json`
+  - `extracted_quote-<product_type>.json`
   - `quote_table.csv`
   - `report.html`
 - 提供 pytest 测试、README 和 `.env.example`。
@@ -279,7 +279,7 @@ docker compose up --build
 CLI 真实抽取前必须在 `.env` 配置可用的 OpenAI-compatible 或 Ollama provider。成功后必须存在：
 
 ```text
-outputs/sample_snowball/extracted_quote.json
+outputs/sample_snowball/extracted_quote-snowball.json
 outputs/sample_snowball/quote_table.csv
 outputs/sample_snowball/report.html
 ```

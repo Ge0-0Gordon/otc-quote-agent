@@ -95,7 +95,7 @@ python cli.py --input sample_data/snowball_inquiry_zh.txt --output outputs/sampl
 
 ```text
 outputs/sample_snowball/
-├─ extracted_quote.json
+├─ extracted_quote-snowball.json
 ├─ quote_table.csv
 └─ report.html
 ```
