@@ -37,7 +37,7 @@ class QuoteValidator:
         if isinstance(quote, SnowballQuote):
             self._validate_snowball(quote, missing, errors, warnings)
         elif isinstance(quote, FCNQuote):
-            self._validate_fcn(quote, missing, errors)
+            self._validate_fcn(quote, missing, errors, warnings)
         elif isinstance(quote, EuropeanOptionQuote):
             self._validate_option(quote, missing)
         self._warn_if_coupon_is_target(quote, warnings)
@@ -119,6 +119,7 @@ class QuoteValidator:
         quote: FCNQuote,
         missing: list[str],
         errors: list[ValidationIssue],
+        warnings: list[ValidationIssue],
     ) -> None:
         for field in (
             "coupon_rate",
@@ -136,6 +137,15 @@ class QuoteValidator:
                     "Multi-underlying FCN must explicitly confirm worst-of structure.",
                 )
             )
+        for field in ("counterparty", "autocall_barrier", "redemption_rule"):
+            if getattr(quote, field) is None:
+                warnings.append(
+                    self._warning(
+                        field,
+                        f"missing_{field}",
+                        f"FCN {field.replace('_', ' ')} is not specified.",
+                    )
+                )
 
     def _validate_option(
         self,

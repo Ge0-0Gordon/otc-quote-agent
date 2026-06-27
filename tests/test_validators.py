@@ -75,6 +75,19 @@ def test_multi_underlying_fcn_requires_worst_of() -> None:
     assert any(issue.code == "ambiguous_worst_of" for issue in validated.validation_errors)
 
 
+def test_fcn_optional_fields_are_warnings() -> None:
+    quote = FCNQuote(raw_text="FCN", underlyings=[{"name": "AAPL"}])
+
+    validated = QuoteValidator().validate(quote)
+
+    warning_codes = {issue.code for issue in validated.warnings}
+    assert {
+        "missing_counterparty",
+        "missing_autocall_barrier",
+        "missing_redemption_rule",
+    } <= warning_codes
+
+
 def test_option_reports_missing_premium() -> None:
     quote = EuropeanOptionQuote(
         raw_text="option",

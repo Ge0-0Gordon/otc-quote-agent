@@ -48,6 +48,14 @@ def test_normalizes_underlying_and_invalid_date() -> None:
     assert result.issues[0].code == "invalid_date"
 
 
+def test_underlying_ticker_fills_missing_name() -> None:
+    result = QuoteNormalizer().normalize(
+        {"underlyings": [{"name": None, "ticker": "AAPL"}]}
+    )
+
+    assert result.data["underlyings"][0]["name"] == "AAPL"
+
+
 def test_parse_iso_date() -> None:
     assert QuoteNormalizer.parse_date("2026-06-28") == date(2026, 6, 28)
 

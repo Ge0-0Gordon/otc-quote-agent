@@ -61,6 +61,7 @@ class QuoteNormalizer:
         issues: list[ValidationIssue] = []
 
         self._normalize_underlyings(data)
+        self._fallback_coupon_rate(data)
         for field in self.NUMBER_FIELDS:
             self._normalize_value(data, field, self.parse_number, issues)
         for field in self.PERCENT_FIELDS:
@@ -86,6 +87,21 @@ class QuoteNormalizer:
                 data[field] = self._normalize_frequency(value)
 
         return NormalizationResult(data=data, issues=issues)
+
+    @staticmethod
+    def _fallback_coupon_rate(data: dict[str, Any]) -> None:
+        if data.get("coupon_rate") not in (None, ""):
+            return
+        raw_text = data.get("raw_text")
+        if not isinstance(raw_text, str):
+            return
+        match = re.search(
+            r"(?:票息|coupon)[^%\d]{0,30}(\d+(?:\.\d+)?)\s*[%％]",
+            raw_text,
+            re.IGNORECASE,
+        )
+        if match:
+            data["coupon_rate"] = f"{match.group(1)}%"
 
     def _normalize_observation_dates(
         self,
@@ -145,6 +161,8 @@ class QuoteNormalizer:
                 normalized.append(self.UNDERLYING_MAP.get(value.strip(), {"name": value.strip()}))
                 continue
             item = dict(value)
+            if not item.get("name") and item.get("ticker"):
+                item["name"] = item["ticker"]
             name = item.get("name")
             if name in self.UNDERLYING_MAP:
                 mapped = dict(self.UNDERLYING_MAP[name])

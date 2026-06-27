@@ -13,6 +13,9 @@ Return one JSON object only. Never infer or invent a value.
 Use null when the source does not state a field.
 Preserve the shortest supporting quote in evidence.
 Distinguish a client's target from a firm quoted term and add a warning when needed.
+If the text states a client's target coupon, such as “希望年化票息不低于15%”
+or “target coupon at least 15%”, still extract the numeric value into coupon_rate.
+The validator will add a warning that it is a client target, not a firm quote.
 Percentages and amounts may remain as written; deterministic code normalizes them later.
 """
 

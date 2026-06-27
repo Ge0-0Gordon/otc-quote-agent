@@ -34,6 +34,18 @@ class QuoteExtractionError(RuntimeError):
 
 
 class QuoteExtractionService:
+    SYSTEM_MANAGED_FIELDS = {
+        "quote_id",
+        "source_file",
+        "source_type",
+        "raw_text",
+        "confidence",
+        "product_type",
+        "missing_fields",
+        "validation_errors",
+        "warnings",
+    }
+
     def __init__(
         self,
         llm_client: LLMClient,
@@ -103,6 +115,8 @@ class QuoteExtractionService:
                 schema,
                 self.llm_client,
             )
+            for field in self.SYSTEM_MANAGED_FIELDS:
+                extracted.pop(field, None)
             extracted.update(
                 {
                     "product_type": classification.product_type.value,
@@ -112,6 +126,8 @@ class QuoteExtractionService:
                     "confidence": classification.confidence,
                 }
             )
+            if classification.product_type is ProductType.EUROPEAN_OPTION:
+                extracted["exercise_style"] = "european"
             normalized = self.normalizer.normalize(extracted)
             quote = schema.model_validate(normalized.data)
         except (ValidationError, LLMResponseError) as exc:
