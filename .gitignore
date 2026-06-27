@@ -1,9 +1,12 @@
 .env
 .venv/
 venv/
+.tmp/
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
+pytest-cache-files-*/
 .coverage
 htmlcov/
 .mypy_cache/
@@ -16,4 +19,3 @@ outputs/*
 *.log
 .DS_Store
 Thumbs.db
-

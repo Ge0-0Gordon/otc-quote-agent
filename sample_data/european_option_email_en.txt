@@ -1,0 +1,5 @@
+Subject: Request for EURUSD European call
+
+Please quote us buying a 3-month European call option on EURUSD with EUR
+5,000,000 notional, strike 1.0850 and cash settlement. The expiry date and
+premium are still to be confirmed.
