@@ -17,9 +17,20 @@ def test_parse_notional(raw: str, expected: float) -> None:
     assert QuoteNormalizer.parse_number(raw) == expected
 
 
+@pytest.mark.parametrize("raw", ["2000w", "2000W", "不超过2000w"])
+def test_parse_w_as_ten_thousand(raw: str) -> None:
+    assert QuoteNormalizer.parse_number(raw) == 20_000_000
+
+
 @pytest.mark.parametrize(
     ("raw", "expected"),
-    [("103%", 1.03), ("15％", 0.15), (75, 0.75), (0.6, 0.6)],
+    [
+        ("103%", 1.03),
+        ("15％", 0.15),
+        ("9.21%", 0.0921),
+        (75, 0.75),
+        (0.6, 0.6),
+    ],
 )
 def test_parse_percentage(raw: object, expected: float) -> None:
     assert QuoteNormalizer.parse_percent(raw) == expected
@@ -54,6 +65,87 @@ def test_underlying_ticker_fills_missing_name() -> None:
     )
 
     assert result.data["underlyings"][0]["name"] == "AAPL"
+
+
+@pytest.mark.parametrize(
+    ("raw", "ticker"),
+    [
+        ("沪深300", "000300.SH"),
+        ("沪深300指数", "000300.SH"),
+        ("CSI300", "000300.SH"),
+        ("CSI 300", "000300.SH"),
+        ("中证1000", "000852.SH"),
+        ("中证1000指数", "000852.SH"),
+        ("CSI1000", "000852.SH"),
+        ("CSI 1000", "000852.SH"),
+        ("中证500", "000905.SH"),
+        ("中证500指数", "000905.SH"),
+        ("CSI500", "000905.SH"),
+        ("CSI 500", "000905.SH"),
+    ],
+)
+def test_official_index_aliases(raw: str, ticker: str) -> None:
+    result = QuoteNormalizer().normalize({"underlying": raw})
+
+    assert result.data["underlyings"][0]["ticker"] == ticker
+    assert result.data["underlyings"][0]["asset_class"] == "equity_index"
+
+
+def test_canonical_underlying_overrides_llm_reference_data() -> None:
+    result = QuoteNormalizer().normalize(
+        {
+            "underlyings": [
+                {
+                    "name": "沪深300指数",
+                    "ticker": "WRONG",
+                    "asset_class": "single_stock",
+                    "exchange": "WRONG",
+                    "currency": "USD",
+                }
+            ]
+        }
+    )
+
+    assert result.data["underlyings"][0] == {
+        "name": "沪深300",
+        "ticker": "000300.SH",
+        "asset_class": "equity_index",
+        "exchange": "SSE",
+        "currency": "CNY",
+    }
+
+
+def test_reference_percentages_and_lockout_are_normalized() -> None:
+    result = QuoteNormalizer().normalize(
+        {
+            "margin_ratio": "50%",
+            "max_loss": "50%",
+            "front_return": "0.3%",
+            "lockout_period": None,
+            "raw_text": "交易期限36个月，从第3个月开始观察",
+        }
+    )
+
+    assert result.data["margin_ratio"] == 0.5
+    assert result.data["max_loss"] == 0.5
+    assert result.data["front_return"] == 0.003
+    assert result.data["lockout_period"] == "3M"
+
+
+def test_official_coupon_terms_are_split_by_source_labels() -> None:
+    result = QuoteNormalizer().normalize(
+        {
+            "coupon_rate": 0.3,
+            "raw_text": (
+                "年化返息：【0.3%】；绝对返息1.5%；"
+                "敲出&红利票息（年化）：【9.21%】"
+            ),
+        }
+    )
+
+    assert result.data["annualized_rebate"] == 0.003
+    assert result.data["absolute_rebate"] == 0.015
+    assert result.data["coupon_rate"] == 0.0921
 
 
 def test_parse_iso_date() -> None:

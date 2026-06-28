@@ -18,7 +18,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8,<10"]
+dev = [
+    "PyYAML>=6,<7",
+    "pytest>=8,<10",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

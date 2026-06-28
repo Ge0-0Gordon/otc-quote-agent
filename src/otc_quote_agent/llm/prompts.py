@@ -16,6 +16,16 @@ Distinguish a client's target from a firm quoted term and add a warning when nee
 If the text states a client's target coupon, such as “希望年化票息不低于15%”
 or “target coupon at least 15%”, still extract the numeric value into coupon_rate.
 The validator will add a warning that it is a client target, not a firm quote.
+Extract official reference-material terms when stated: structure_name, trade_date,
+margin_ratio, max_loss, coupon_structure, front_back_annualized_return,
+front_return and remarks.
+Coupon expressions may include 年化返息, 绝对返息, 敲出&红利票息, 第一年票息,
+第二年票息, 第三年票息 and 红利票息. If a value can be split unambiguously,
+put 年化返息 in annualized_rebate, 绝对返息 in absolute_rebate, and the
+primary 敲出&红利票息 in coupon_rate. Otherwise do not guess: preserve the
+complete source wording in coupon_structure or remarks.
+redemption_rule must describe the redemption or knock-out mechanics; do not
+copy a standalone barrier value as the rule.
 Percentages and amounts may remain as written; deterministic code normalizes them later.
 """
 

@@ -73,9 +73,13 @@ class BaseQuote(BaseModel):
     source_type: SourceType = SourceType.PASTED_TEXT
     counterparty: str | None = None
     quote_date: date | None = None
+    trade_date: date | None = None
     product_type: ProductType
+    structure_name: str | None = None
     currency: str | None = None
     notional: float | None = None
+    margin_ratio: float | None = None
+    max_loss: float | None = None
     trade_direction: str | None = None
     underlyings: list[Underlying] = Field(default_factory=list)
     tenor: str | None = None
@@ -83,6 +87,12 @@ class BaseQuote(BaseModel):
     maturity_date: date | None = None
     pricing_date: date | None = None
     settlement_method: str | None = None
+    coupon_structure: str | None = None
+    annualized_rebate: float | None = None
+    absolute_rebate: float | None = None
+    front_back_annualized_return: str | None = None
+    front_return: float | None = None
+    remarks: str | None = None
     raw_text: str = ""
     confidence: float | None = Field(default=None, ge=0, le=1)
     evidence: list[EvidenceItem] = Field(default_factory=list)

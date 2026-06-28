@@ -100,3 +100,36 @@ def test_option_reports_missing_premium() -> None:
     validated = QuoteValidator().validate(quote)
 
     assert "premium" in validated.missing_fields
+
+
+def test_reference_ratios_must_be_between_zero_and_one() -> None:
+    quote = SnowballQuote(
+        raw_text="限亏雪球",
+        structure_name="限亏雪球",
+        margin_ratio=1.2,
+        max_loss=-0.1,
+    )
+
+    validated = QuoteValidator().validate(quote)
+
+    assert [issue.code for issue in validated.validation_errors].count(
+        "percentage_out_of_range"
+    ) == 2
+
+
+def test_limited_loss_snowball_warns_for_missing_loss_terms() -> None:
+    quote = SnowballQuote(
+        raw_text="沪深300限亏雪球",
+        structure_name="限亏雪球",
+        coupon_structure="敲出&红利票息（年化）9.21%",
+    )
+
+    validated = QuoteValidator().validate(quote)
+    warning_codes = {issue.code for issue in validated.warnings}
+
+    assert "coupon_rate" not in validated.missing_fields
+    assert {
+        "coupon_rate_in_structure",
+        "limited_loss_missing_margin_ratio",
+        "limited_loss_missing_max_loss",
+    } <= warning_codes

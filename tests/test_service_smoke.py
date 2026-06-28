@@ -178,3 +178,66 @@ def test_service_writes_all_artifacts(tmp_path) -> None:
         "quote_table.csv",
         "report.html",
     }
+
+
+def test_reference_case_09_uses_official_terms_and_canonical_mapping() -> None:
+    payload = {
+        "structure_name": "限亏雪球",
+        "underlying": {
+            "name": "沪深300指数",
+            "asset_class": "single_stock",
+            "currency": "USD",
+        },
+        "notional": "不超过2000w",
+        "currency": "CNY",
+        "tenor": "36个月",
+        "lockout_period": None,
+        "knock_in_barrier": "70%",
+        "knock_out_barrier": "100%",
+        "margin_ratio": "50%",
+        "max_loss": "50%",
+        "coupon_rate": "9.21%",
+        "coupon_structure": "年化返息0.3%；敲出&红利票息（年化）9.21%",
+        "observation_frequency": "每月",
+        "knock_out_observation_dates": None,
+        "knock_in_observation_type": "daily",
+        "evidence": None,
+    }
+    service = QuoteExtractionService(FakeLLM([payload]))
+
+    result = service.run(
+        input_path=SAMPLE_DIR / "reference_case_09_limited_loss_snowball.txt"
+    )
+
+    assert result.product_type is ProductType.SNOWBALL
+    assert result.quote is not None
+    assert result.quote.underlyings[0].ticker == "000300.SH"
+    assert result.quote.underlyings[0].asset_class == "equity_index"
+    assert result.quote.notional == 20_000_000
+    assert result.quote.tenor == "36M"
+    assert result.quote.lockout_period == "3M"
+    assert result.quote.knock_in_barrier == pytest.approx(0.7)
+    assert result.quote.knock_out_barrier == pytest.approx(1.0)
+    assert result.quote.margin_ratio == pytest.approx(0.5)
+    assert result.quote.max_loss == pytest.approx(0.5)
+    assert result.quote.coupon_rate == pytest.approx(0.0921)
+    assert result.quote.annualized_rebate == pytest.approx(0.003)
+    assert result.processing_metadata["reference_case_id"] == "reference_case_09"
+
+
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "reference_case_11_dcn_unsupported.txt",
+        "reference_case_12_sharkfin_unsupported.txt",
+    ],
+)
+def test_official_unsupported_cases_skip_llm(filename: str) -> None:
+    fake = FakeLLM([])
+    service = QuoteExtractionService(fake)
+
+    result = service.run(input_path=SAMPLE_DIR / filename)
+
+    assert result.status is ExtractionStatus.UNSUPPORTED
+    assert result.quote is None
+    assert fake.call_count == 0

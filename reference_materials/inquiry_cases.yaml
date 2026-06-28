@@ -1,0 +1,136 @@
+source_document: "金融创新业务部衍生品参考资料.docx"
+source_section: "4）相关询价案例"
+cases:
+  - case_id: "reference_case_07"
+    raw_text: |-
+      7、中证1000、36锁3、60/100（SD 0.5%）、绝对返息1.5%、第二第三年敲出及红利5.5%、第一年敲出多少？100%保证金、6月23日前交易
+    inferred_product_type: "snowball"
+    supported_status: "partial"
+    key_terms:
+      underlying: "中证1000"
+      notional: null
+      tenor: "36M"
+      lockout_period: "3M"
+      knock_in_barrier: "60%"
+      knock_out_barrier: "100%"
+      margin_ratio: "100%"
+      max_loss: null
+      coupon_terms: "SD 0.5%、绝对返息1.5%、第二第三年敲出及红利5.5%、第一年敲出多少？"
+    notes: "材料未直接写出“雪球”，按敲入、敲出、锁定期和返息条款推断为雪球类；第一年票息待询价。"
+
+  - case_id: "reference_case_08"
+    raw_text: |-
+      8、欧式早利：中证1000、36锁3、65/103（SD 0.5%）、年化返息1.6%、第三年敲出与红利6%、第二年敲出9%、第一年敲出多少？授信交易、锁价至6月18日
+    inferred_product_type: "snowball"
+    supported_status: "partial"
+    key_terms:
+      underlying: "中证1000"
+      notional: null
+      tenor: "36M"
+      lockout_period: "3M"
+      knock_in_barrier: "65%"
+      knock_out_barrier: "103%"
+      margin_ratio: null
+      max_loss: null
+      coupon_terms: "SD 0.5%、年化返息1.6%、第三年敲出与红利6%、第二年敲出9%、第一年敲出多少？"
+    notes: "欧式早利按官方适配规则归为雪球类；授信交易和锁价日期保留为备注。"
+
+  - case_id: "reference_case_09"
+    raw_text: |-
+      9、挂钩标的：【沪深300（000300）】
+      名义本金：【不超过2000w】
+      结构：【限亏雪球】
+      敲入价格：【70%】
+      敲出价格：【100%】
+      保证金比例：【50%】
+      最大亏损：【50%】
+      敲出观察频率：【每月】
+      敲入观察频率：【每日】
+      年化返息：【0.3%】
+      交易期限：【36】个月，【从第3个月开始观察】
+      敲出&红利票息（年化）：【9.21%】
+    inferred_product_type: "snowball"
+    supported_status: "supported"
+    key_terms:
+      underlying: "沪深300（000300）"
+      notional: "不超过2000w"
+      tenor: "36M"
+      lockout_period: "3M"
+      knock_in_barrier: "70%"
+      knock_out_barrier: "100%"
+      margin_ratio: "50%"
+      max_loss: "50%"
+      coupon_terms: "年化返息0.3%；敲出&红利票息（年化）9.21%"
+    notes: "官方限亏雪球案例；适合作为新增字段、金额单位和沪深300主数据映射的验收样例。"
+
+  - case_id: "reference_case_10"
+    raw_text: |-
+      10、中证1000，36M锁3M，101/70（sd 0.5），绝对返息1.3%，第二年票息=第三年票息=红利票息=5.5%，第一年敲出票息=？【全保，6月15日前交易，规模不超5000万】
+    inferred_product_type: "snowball"
+    supported_status: "partial"
+    key_terms:
+      underlying: "中证1000"
+      notional: "不超5000万"
+      tenor: "36M"
+      lockout_period: "3M"
+      knock_in_barrier: "70%"
+      knock_out_barrier: "101%"
+      margin_ratio: "100%"
+      max_loss: null
+      coupon_terms: "sd 0.5，绝对返息1.3%，第二年票息=第三年票息=红利票息=5.5%，第一年敲出票息=？"
+    notes: "材料使用 101/70 简写；按敲出/敲入顺序记录，第一年票息待询价。"
+
+  - case_id: "reference_case_11"
+    raw_text: |-
+      11、ZZ1000，DCN，绝反1.03%，年化返息0.23%，36M锁3，101敲出，sd0.5%，最后一个月敲出降至68%，派息线75，询每月派息，预计今日
+    inferred_product_type: "unsupported"
+    supported_status: "unsupported"
+    key_terms:
+      underlying: "ZZ1000"
+      notional: null
+      tenor: "36M"
+      lockout_period: "3M"
+      knock_in_barrier: null
+      knock_out_barrier: "101%；最后一个月降至68%"
+      margin_ratio: null
+      max_loss: null
+      coupon_terms: "绝反1.03%，年化返息0.23%，sd0.5%，派息线75，询每月派息"
+    notes: "DCN 不属于第一版支持产品；只生成 unsupported 报告，不套用雪球或 FCN schema。"
+
+  - case_id: "reference_case_12"
+    raw_text: |-
+      12、结构要素：中证500美式鲨鱼鳍
+      K=100    B=120  敲出收益率5%(绝对收益率)  参与率100%，名义本金规模200万，期限6M，标的指数上涨区间0-20%之前的到期收益率也是按绝对收益率，麻烦请报下绝对期权费率，谢谢
+    inferred_product_type: "unsupported"
+    supported_status: "unsupported"
+    key_terms:
+      underlying: "中证500"
+      notional: "200万"
+      tenor: "6M"
+      lockout_period: null
+      knock_in_barrier: null
+      knock_out_barrier: "B=120"
+      margin_ratio: null
+      max_loss: null
+      coupon_terms: "敲出收益率5%(绝对收益率)，参与率100%，上涨区间0-20%之前的到期收益率按绝对收益率，询绝对期权费率"
+    notes: "美式鲨鱼鳍不属于第一版支持产品；只生成 unsupported 报告。"
+
+  - case_id: "reference_case_13"
+    raw_text: |-
+      13、
+      1：中证1000 2年 锁3 65-96 递减0.75%；
+      2：中证1000 2年 锁3 65-101 递减1% 。
+      年化返息0.3%，预计本周四交易 二选一 1000万
+    inferred_product_type: "snowball"
+    supported_status: "partial"
+    key_terms:
+      underlying: "中证1000"
+      notional: "1000万"
+      tenor: "2Y"
+      lockout_period: "3M"
+      knock_in_barrier: "65%"
+      knock_out_barrier: "方案1为96%；方案2为101%"
+      margin_ratio: null
+      max_loss: null
+      coupon_terms: "方案1递减0.75%；方案2递减1%；年化返息0.3%"
+    notes: "两个雪球方案二选一。第一版按 snowball/partial 处理，完整方案文本保留到 coupon_structure 或 remarks，不猜测最终选择。"

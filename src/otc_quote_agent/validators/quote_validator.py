@@ -32,6 +32,8 @@ class QuoteValidator:
 
         if quote.notional is not None and quote.notional <= 0:
             errors.append(self._error("notional", "non_positive", "Notional must be positive."))
+        self._validate_ratio(quote.margin_ratio, "margin_ratio", errors)
+        self._validate_ratio(quote.max_loss, "max_loss", errors)
         self._validate_date_order(quote, errors)
 
         if isinstance(quote, SnowballQuote):
@@ -63,10 +65,20 @@ class QuoteValidator:
             "initial_price_date",
             "knock_out_barrier",
             "knock_in_barrier",
-            "coupon_rate",
             "observation_frequency",
         ):
             self._require(getattr(quote, field), field, missing)
+        if quote.coupon_rate is None:
+            if quote.coupon_structure:
+                warnings.append(
+                    self._warning(
+                        "coupon_rate",
+                        "coupon_rate_in_structure",
+                        "Coupon terms are preserved in coupon_structure and require review.",
+                    )
+                )
+            else:
+                missing.append("coupon_rate")
         if (
             quote.knock_out_barrier is not None
             and quote.knock_in_barrier is not None
@@ -95,6 +107,17 @@ class QuoteValidator:
                     "Snowball quote should contain exactly one underlying.",
                 )
             )
+        structure_text = f"{quote.structure_name or ''} {quote.raw_text}"
+        if "限亏雪球" in structure_text:
+            for field in ("margin_ratio", "max_loss"):
+                if getattr(quote, field) is None:
+                    warnings.append(
+                        self._warning(
+                            field,
+                            f"limited_loss_missing_{field}",
+                            f"Limited-loss snowball should specify {field.replace('_', ' ')}.",
+                        )
+                    )
 
     @staticmethod
     def _warn_if_coupon_is_target(
@@ -169,6 +192,21 @@ class QuoteValidator:
                     "start_date",
                     "invalid_date_order",
                     "Start date must be earlier than maturity or expiry date.",
+                )
+            )
+
+    @staticmethod
+    def _validate_ratio(
+        value: float | None,
+        field: str,
+        errors: list[ValidationIssue],
+    ) -> None:
+        if value is not None and not 0 <= value <= 1:
+            errors.append(
+                QuoteValidator._error(
+                    field,
+                    "percentage_out_of_range",
+                    f"{field.replace('_', ' ').title()} must be between 0 and 1.",
                 )
             )
 

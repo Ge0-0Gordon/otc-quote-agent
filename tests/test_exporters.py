@@ -61,3 +61,20 @@ def test_unsupported_report_contains_no_quote_fields() -> None:
 
     assert "No supported product schema was applied" in rendered["report.html"]
     assert json.loads(rendered["extracted_quote-unsupported.json"])["quote"] is None
+
+
+def test_reference_fields_and_case_id_are_shown_in_html() -> None:
+    result = make_result().model_copy(
+        update={
+            "processing_metadata": {
+                "source_file": "reference_case_09_limited_loss_snowball.txt",
+                "reference_case_id": "reference_case_09",
+            }
+        }
+    )
+
+    html = ExportBundle().render_all(result)["report.html"]
+
+    assert "Reference material fields" in html
+    assert "官方参考材料字段适配说明" in html
+    assert "reference_case_09" in html

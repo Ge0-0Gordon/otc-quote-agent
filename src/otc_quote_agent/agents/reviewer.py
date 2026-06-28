@@ -27,6 +27,9 @@ class ReviewQuestionGenerator:
         "strike": "行权价",
         "expiry_date": "期权到期日",
         "premium": "权利金",
+        "margin_ratio": "保证金比例",
+        "max_loss": "最大亏损比例",
+        "coupon_structure": "票息结构",
     }
 
     def generate(self, missing_fields: list[str]) -> list[str]:

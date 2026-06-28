@@ -10,8 +10,13 @@ PERCENT_FIELDS = {
     "knock_out_barrier",
     "knock_in_barrier",
     "coupon_rate",
+    "annualized_rebate",
+    "absolute_rebate",
     "strike_price",
     "autocall_barrier",
+    "margin_ratio",
+    "max_loss",
+    "front_return",
 }
 
 

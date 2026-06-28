@@ -146,6 +146,8 @@ class QuoteExtractionService:
                 "provider": self.llm_client.provider_name,
                 "model": self.llm_client.model,
                 "source_type": document.source_type.value,
+                "source_file": document.source_file,
+                "reference_case_id": self._reference_case_id(document.source_file),
             },
         )
         if output_dir is not None:
@@ -192,6 +194,8 @@ class QuoteExtractionService:
                 "provider": self.llm_client.provider_name,
                 "model": self.llm_client.model,
                 "source_type": document.source_type.value,
+                "source_file": document.source_file,
+                "reference_case_id": self._reference_case_id(document.source_file),
                 "extension_suggestion": (
                     "Add a dedicated schema, normalization rules and validator "
                     "before enabling extraction for this product."
@@ -203,3 +207,10 @@ class QuoteExtractionService:
     def _summarize(text: str, limit: int = 300) -> str:
         compact = re.sub(r"\s+", " ", text).strip()
         return compact if len(compact) <= limit else f"{compact[:limit].rstrip()}…"
+
+    @staticmethod
+    def _reference_case_id(source_file: str | None) -> str | None:
+        if source_file is None:
+            return None
+        match = re.search(r"(reference_case_\d+)", source_file, re.IGNORECASE)
+        return match.group(1).lower() if match else None

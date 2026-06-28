@@ -12,6 +12,7 @@ RUN python -m pip install .
 
 COPY app.py cli.py ./
 COPY sample_data ./sample_data
+COPY reference_materials ./reference_materials
 
 RUN useradd --create-home appuser \
     && mkdir -p /app/outputs \

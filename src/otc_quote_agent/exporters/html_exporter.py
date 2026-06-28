@@ -15,6 +15,7 @@ class HTMLExporter:
         sections = [
             "<h1>OTC Quote Structuring Report</h1>",
             self._summary(result),
+            self._reference_materials(result),
         ]
         if result.quote is None:
             sections.append(
@@ -69,7 +70,24 @@ class HTMLExporter:
             f"<tr><th>Product type</th><td>{self._escape(result.product_type.value)}</td></tr>"
             f"<tr><th>Classification reason</th><td>{self._escape(result.classification_reason)}</td></tr>"
             f"<tr><th>Source summary</th><td>{self._escape(result.source_summary or '')}</td></tr>"
+            f"<tr><th>Source file</th><td>{self._escape(result.processing_metadata.get('source_file') or '')}</td></tr>"
+            f"<tr><th>Reference case</th><td>{self._escape(result.processing_metadata.get('reference_case_id') or '')}</td></tr>"
             "</table></section>"
+        )
+
+    def _reference_materials(self, result: ExtractionResult) -> str:
+        reference_case = result.processing_metadata.get("reference_case_id")
+        case_note = (
+            f"<p><strong>Official reference case:</strong> {self._escape(reference_case)}</p>"
+            if reference_case
+            else ""
+        )
+        return (
+            "<section><h2>Reference material fields / 官方参考材料字段适配说明</h2>"
+            "<p>The schema incorporates the official standardized derivative terms, "
+            "including structure name, trade date, margin ratio, maximum loss, "
+            "coupon structure, front/back annualized return, front return and remarks.</p>"
+            f"{case_note}</section>"
         )
 
     def _quote_table(self, result: ExtractionResult) -> str:
