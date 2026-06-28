@@ -22,6 +22,17 @@ def test_parse_w_as_ten_thousand(raw: str) -> None:
     assert QuoteNormalizer.parse_number(raw) == 20_000_000
 
 
+def test_explicit_reference_notional_unit_overrides_bare_llm_number() -> None:
+    result = QuoteNormalizer().normalize(
+        {
+            "notional": 2000,
+            "raw_text": "名义本金：【不超过2000w】",
+        }
+    )
+
+    assert result.data["notional"] == 20_000_000
+
+
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [
@@ -38,7 +49,13 @@ def test_parse_percentage(raw: object, expected: float) -> None:
 
 @pytest.mark.parametrize(
     ("raw", "expected"),
-    [("12个月", "12M"), ("3-month", "3M"), ("一年期", "1Y"), ("2Y", "2Y")],
+    [
+        ("12个月", "12M"),
+        ("3-month", "3M"),
+        ("一年期", "1Y"),
+        ("2Y", "2Y"),
+        ("前三个月", "3M"),
+    ],
 )
 def test_parse_tenor(raw: str, expected: str) -> None:
     assert QuoteNormalizer.parse_tenor(raw) == expected
@@ -146,6 +163,35 @@ def test_official_coupon_terms_are_split_by_source_labels() -> None:
     assert result.data["annualized_rebate"] == 0.003
     assert result.data["absolute_rebate"] == 0.015
     assert result.data["coupon_rate"] == 0.0921
+
+
+def test_reference_labels_override_wrong_numeric_llm_semantics() -> None:
+    result = QuoteNormalizer().normalize(
+        {
+            "coupon_rate": 0.75,
+            "annualized_rebate": 0.3,
+            "lockout_period": "第二个月",
+            "raw_text": (
+                "中证1000 2年 锁3 65-96 递减0.75%；"
+                "年化返息0.3%，二选一"
+            ),
+        }
+    )
+
+    assert result.data["coupon_rate"] is None
+    assert result.data["annualized_rebate"] == 0.003
+    assert result.data["lockout_period"] == "3M"
+
+
+def test_explicit_observation_start_overrides_wrong_llm_lockout() -> None:
+    result = QuoteNormalizer().normalize(
+        {
+            "lockout_period": "第二个月",
+            "raw_text": "交易期限36个月，从第3个月开始观察",
+        }
+    )
+
+    assert result.data["lockout_period"] == "3M"
 
 
 def test_parse_iso_date() -> None:

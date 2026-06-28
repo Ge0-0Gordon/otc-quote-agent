@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from email import policy
+from email.parser import BytesParser
+from html.parser import HTMLParser
 from io import BytesIO
 from pathlib import Path
+from zipfile import BadZipFile, ZipFile
 
 from docx import Document
 from openpyxl import load_workbook
@@ -25,6 +29,20 @@ class ScannedPdfError(DocumentParseError):
     """Raised when a PDF contains no extractable text."""
 
 
+class InputLimitError(DocumentParseError):
+    """Raised when an input exceeds a deterministic safety limit."""
+
+
+class _HTMLTextExtractor(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        if data.strip():
+            self.parts.append(data.strip())
+
+
 @dataclass(frozen=True)
 class ParsedDocument:
     text: str
@@ -35,18 +53,27 @@ class ParsedDocument:
 class DocumentParser:
     """Extract plain text without reconstructing layout or running OCR."""
 
+    MAX_FILE_BYTES = 10 * 1024 * 1024
+    MAX_TEXT_CHARS = 200_000
+    MAX_OFFICE_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
+    MAX_PDF_PAGES = 50
+    MAX_XLSX_SHEETS = 20
+    MAX_XLSX_NONEMPTY_CELLS = 100_000
+
     SUPPORTED_EXTENSIONS = {
         ".txt": SourceType.TXT,
         ".md": SourceType.MD,
         ".docx": SourceType.DOCX,
         ".xlsx": SourceType.XLSX,
         ".pdf": SourceType.PDF,
+        ".eml": SourceType.EML,
     }
 
     def parse_text(self, text: str) -> ParsedDocument:
         cleaned = text.strip()
         if not cleaned:
             raise DocumentParseError("Pasted text is empty.")
+        self._validate_text_length(cleaned)
         return ParsedDocument(
             text=cleaned,
             source_file=None,
@@ -70,10 +97,16 @@ class DocumentParser:
             )
         if not content:
             raise DocumentParseError(f"Input file is empty: {filename}")
+        if len(content) > self.MAX_FILE_BYTES:
+            raise InputLimitError(
+                f"Input file exceeds the {self.MAX_FILE_BYTES} byte limit."
+            )
+        if source_type in {SourceType.DOCX, SourceType.XLSX}:
+            self._validate_office_archive(content)
 
         try:
             text = self._extract(source_type, content)
-        except ScannedPdfError:
+        except (ScannedPdfError, InputLimitError):
             raise
         except Exception as exc:
             raise DocumentParseError(f"Failed to parse {filename}: {exc}") from exc
@@ -86,6 +119,7 @@ class DocumentParser:
                     "OCR is not supported in this version."
                 )
             raise DocumentParseError(f"No extractable text found in {filename}.")
+        self._validate_text_length(cleaned)
 
         return ParsedDocument(
             text=cleaned,
@@ -102,6 +136,8 @@ class DocumentParser:
             return self._extract_xlsx(content)
         if source_type is SourceType.PDF:
             return self._extract_pdf(content)
+        if source_type is SourceType.EML:
+            return self._extract_eml(content)
         raise UnsupportedDocumentError(f"Unsupported source type: {source_type}")
 
     @staticmethod
@@ -124,8 +160,7 @@ class DocumentParser:
                     lines.append(" | ".join(values))
         return "\n".join(lines)
 
-    @staticmethod
-    def _extract_xlsx(content: bytes) -> str:
+    def _extract_xlsx(self, content: bytes) -> str:
         workbook = load_workbook(
             BytesIO(content),
             read_only=True,
@@ -133,19 +168,79 @@ class DocumentParser:
         )
         lines: list[str] = []
         try:
+            if len(workbook.worksheets) > self.MAX_XLSX_SHEETS:
+                raise InputLimitError(
+                    f"Workbook exceeds the {self.MAX_XLSX_SHEETS} sheet limit."
+                )
+            nonempty_cells = 0
             for sheet in workbook.worksheets:
                 lines.append(f"[Sheet: {sheet.title}]")
                 for row in sheet.iter_rows(values_only=True):
                     values = [str(value).strip() for value in row if value is not None]
                     if values:
+                        nonempty_cells += len(values)
+                        if nonempty_cells > self.MAX_XLSX_NONEMPTY_CELLS:
+                            raise InputLimitError(
+                                "Workbook exceeds the non-empty cell limit."
+                            )
                         lines.append(" | ".join(values))
         finally:
             workbook.close()
         return "\n".join(lines)
 
-    @staticmethod
-    def _extract_pdf(content: bytes) -> str:
+    def _extract_pdf(self, content: bytes) -> str:
         reader = PdfReader(BytesIO(content))
         if reader.is_encrypted:
             raise DocumentParseError("Encrypted PDF files are not supported.")
+        if len(reader.pages) > self.MAX_PDF_PAGES:
+            raise InputLimitError(
+                f"PDF exceeds the {self.MAX_PDF_PAGES} page limit."
+            )
         return "\n".join((page.extract_text() or "") for page in reader.pages)
+
+    @staticmethod
+    def _extract_eml(content: bytes) -> str:
+        message = BytesParser(policy=policy.default).parsebytes(content)
+        headers = [
+            f"{name}: {message.get(name)}"
+            for name in ("Subject", "From", "To", "Date")
+            if message.get(name)
+        ]
+        plain_parts: list[str] = []
+        html_parts: list[str] = []
+        parts = message.walk() if message.is_multipart() else [message]
+        for part in parts:
+            if part.is_multipart() or part.get_content_disposition() == "attachment":
+                continue
+            content_type = part.get_content_type()
+            try:
+                body = part.get_content()
+            except (LookupError, UnicodeDecodeError) as exc:
+                raise DocumentParseError(f"Cannot decode email body: {exc}") from exc
+            if not isinstance(body, str):
+                continue
+            if content_type == "text/plain":
+                plain_parts.append(body.strip())
+            elif content_type == "text/html":
+                parser = _HTMLTextExtractor()
+                parser.feed(body)
+                html_parts.append("\n".join(parser.parts))
+        body_parts = plain_parts or html_parts
+        return "\n".join([*headers, *body_parts])
+
+    def _validate_text_length(self, text: str) -> None:
+        if len(text) > self.MAX_TEXT_CHARS:
+            raise InputLimitError(
+                f"Extracted text exceeds the {self.MAX_TEXT_CHARS} character limit."
+            )
+
+    def _validate_office_archive(self, content: bytes) -> None:
+        try:
+            with ZipFile(BytesIO(content)) as archive:
+                expanded_size = sum(item.file_size for item in archive.infolist())
+        except BadZipFile as exc:
+            raise DocumentParseError("Office document is not a valid ZIP archive.") from exc
+        if expanded_size > self.MAX_OFFICE_UNCOMPRESSED_BYTES:
+            raise InputLimitError(
+                "Office document exceeds the uncompressed size limit."
+            )

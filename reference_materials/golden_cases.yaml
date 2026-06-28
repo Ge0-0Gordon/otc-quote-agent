@@ -1,0 +1,151 @@
+version: 1
+description: >
+  Offline regression cases for the deterministic workflow. LLM responses are
+  fixed fixtures; these results measure classification, normalization,
+  validation, unsupported handling, and export-ready schema stability rather
+  than live model quality.
+
+cases:
+  - case_id: sample_snowball
+    input_file: sample_data/snowball_inquiry_zh.txt
+    llm_response:
+      underlying: 中证1000
+      notional: 1000万
+      currency: CNY
+      tenor: 12个月
+      knock_out_barrier: 103%
+      knock_in_barrier: 75%
+      coupon_rate:
+      observation_frequency: 每月
+      lockout_period: 3M
+      evidence:
+        - field: notional
+          source_text: 名义本金1000万人民币
+        - field: coupon_rate
+          source_text: 希望年化票息不低于15%
+    expected:
+      status: success
+      product_type: snowball
+      fields:
+        underlyings.0.ticker: 000852.SH
+        notional: 10000000
+        tenor: 12M
+        lockout_period: 3M
+        knock_out_barrier: 1.03
+        knock_in_barrier: 0.75
+        coupon_rate: 0.15
+      warning_codes:
+        - indicative_coupon_target
+
+  - case_id: sample_fcn
+    input_file: sample_data/fcn_quote_zh.txt
+    llm_response:
+      underlyings:
+        - AAPL
+        - MSFT
+        - TSLA
+      worst_of: true
+      notional: USD 1,000,000
+      currency: USD
+      tenor: 一年期
+      strike_price: 80%
+      knock_in_barrier: 60%
+      coupon_rate: 12%
+      coupon_frequency: 每月
+      observation_frequency: 每月
+    expected:
+      status: success
+      product_type: fcn
+      fields:
+        notional: 1000000
+        tenor: 1Y
+        strike_price: 0.8
+        knock_in_barrier: 0.6
+        coupon_rate: 0.12
+        worst_of: true
+
+  - case_id: sample_european_option
+    input_file: sample_data/european_option_email_en.txt
+    llm_response:
+      underlying: EURUSD
+      notional: EUR 5,000,000
+      currency: EUR
+      tenor: 3-month
+      option_type: call
+      position: buy
+      strike: 1.085
+      settlement_method: cash
+      exercise_style:
+    expected:
+      status: success
+      product_type: european_option
+      fields:
+        notional: 5000000
+        tenor: 3M
+        option_type: call
+        position: buy
+        strike: 1.085
+        exercise_style: european
+
+  - case_id: reference_case_09
+    input_file: sample_data/reference_case_09_limited_loss_snowball.txt
+    llm_response:
+      structure_name: 限亏雪球
+      underlying:
+        name: 沪深300指数
+        asset_class: single_stock
+        currency: USD
+      notional: 不超过2000w
+      currency: CNY
+      tenor: 36个月
+      lockout_period:
+      knock_in_barrier: 70%
+      knock_out_barrier: 100%
+      margin_ratio: 50%
+      max_loss: 50%
+      coupon_rate: 9.21%
+      coupon_structure: 年化返息0.3%；敲出&红利票息（年化）9.21%
+      observation_frequency: 每月
+      knock_in_observation_type: daily
+      evidence:
+        - field: notional
+          source_text: 名义本金：【不超过2000w】
+        - field: margin_ratio
+          source_text: 保证金比例：【50%】
+    expected:
+      status: success
+      product_type: snowball
+      fields:
+        structure_name: 限亏雪球
+        underlyings.0.ticker: 000300.SH
+        underlyings.0.asset_class: equity_index
+        notional: 20000000
+        tenor: 36M
+        lockout_period: 3M
+        knock_in_barrier: 0.7
+        knock_out_barrier: 1.0
+        margin_ratio: 0.5
+        max_loss: 0.5
+        annualized_rebate: 0.003
+        coupon_rate: 0.0921
+
+  - case_id: reference_case_06
+    input_file: sample_data/reference_case_06_phoenix_dcn_unsupported.txt
+    expected:
+      status: unsupported
+      product_type: unsupported
+      quote_is_null: true
+
+  - case_id: reference_case_11
+    input_file: sample_data/reference_case_11_dcn_unsupported.txt
+    expected:
+      status: unsupported
+      product_type: unsupported
+      quote_is_null: true
+
+  - case_id: reference_case_12
+    input_file: sample_data/reference_case_12_sharkfin_unsupported.txt
+    expected:
+      status: unsupported
+      product_type: unsupported
+      quote_is_null: true

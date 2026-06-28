@@ -10,6 +10,7 @@ from otc_quote_agent.schemas import (
     SnowballQuote,
     ValidationIssue,
 )
+from otc_quote_agent.provenance import source_supports_evidence
 
 
 class QuoteValidator:
@@ -35,6 +36,7 @@ class QuoteValidator:
         self._validate_ratio(quote.margin_ratio, "margin_ratio", errors)
         self._validate_ratio(quote.max_loss, "max_loss", errors)
         self._validate_date_order(quote, errors)
+        self._validate_evidence(quote, warnings)
 
         if isinstance(quote, SnowballQuote):
             self._validate_snowball(quote, missing, errors, warnings)
@@ -50,6 +52,21 @@ class QuoteValidator:
             "warnings": warnings,
         }
         return quote.model_copy(update=update)
+
+    @staticmethod
+    def _validate_evidence(
+        quote: BaseQuote,
+        warnings: list[ValidationIssue],
+    ) -> None:
+        for item in quote.evidence:
+            if not source_supports_evidence(item.source_text, quote.raw_text):
+                warnings.append(
+                    QuoteValidator._warning(
+                        item.field,
+                        "evidence_not_found",
+                        "Evidence text was not found verbatim in the source document.",
+                    )
+                )
 
     def _validate_snowball(
         self,

@@ -1,6 +1,11 @@
 from datetime import date
 
-from otc_quote_agent.schemas import EuropeanOptionQuote, FCNQuote, SnowballQuote
+from otc_quote_agent.schemas import (
+    EuropeanOptionQuote,
+    FCNQuote,
+    ProductType,
+    SnowballQuote,
+)
 from otc_quote_agent.validators import QuoteValidator
 
 
@@ -133,3 +138,20 @@ def test_limited_loss_snowball_warns_for_missing_loss_terms() -> None:
         "limited_loss_missing_margin_ratio",
         "limited_loss_missing_max_loss",
     } <= warning_codes
+
+
+def test_validator_warns_when_evidence_is_not_in_source() -> None:
+    quote = SnowballQuote(
+        product_type=ProductType.SNOWBALL,
+        raw_text="真实原文",
+        evidence=[
+            {
+                "field": "notional",
+                "source_text": "模型编造的证据",
+            }
+        ],
+    )
+
+    validated = QuoteValidator().validate(quote)
+
+    assert any(issue.code == "evidence_not_found" for issue in validated.warnings)

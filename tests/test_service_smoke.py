@@ -88,6 +88,58 @@ def test_unsupported_product_skips_quote_extraction() -> None:
     assert "extension_suggestion" in result.processing_metadata
 
 
+def test_reference_case_13_preserves_two_quote_alternatives() -> None:
+    service = QuoteExtractionService(
+        FakeLLM(
+            [
+                {
+                    "quote_candidates": [
+                        {
+                            "structure_name": "雪球方案一",
+                            "underlying": "中证1000",
+                            "notional": "1000万",
+                            "currency": "CNY",
+                            "tenor": "2年",
+                            "lockout_period": "3M",
+                            "knock_in_barrier": "65%",
+                            "knock_out_barrier": "96%",
+                            "coupon_structure": "敲出线递减0.75%",
+                        },
+                        {
+                            "structure_name": "雪球方案二",
+                            "underlying": "中证1000",
+                            "notional": "1000万",
+                            "currency": "CNY",
+                            "tenor": "2年",
+                            "lockout_period": "3M",
+                            "knock_in_barrier": "65%",
+                            "knock_out_barrier": "101%",
+                            "coupon_structure": "敲出线递减1%",
+                        },
+                    ]
+                }
+            ]
+        )
+    )
+
+    result = service.run(
+        input_path=SAMPLE_DIR / "reference_case_13_snowball_two_choices.txt"
+    )
+
+    assert result.product_type is ProductType.SNOWBALL
+    assert len(result.quote_candidates) == 2
+    assert result.quote == result.quote_candidates[0]
+    assert result.quote_candidates[0].knock_out_barrier == pytest.approx(0.96)
+    assert result.quote_candidates[1].knock_out_barrier == pytest.approx(1.01)
+    assert result.quote_candidates[0].coupon_structure == "敲出线递减0.75%"
+    assert result.quote_candidates[1].coupon_structure == "敲出线递减1%"
+    assert result.quote_candidates[0].coupon_rate is None
+    assert result.quote_candidates[1].coupon_rate is None
+    assert result.quote_candidates[0].annualized_rebate == pytest.approx(0.003)
+    assert result.quote_candidates[1].annualized_rebate == pytest.approx(0.003)
+    assert result.processing_metadata["quote_candidate_count"] == 2
+
+
 def test_european_option_ignores_llm_managed_fields_and_sets_exercise_style() -> None:
     service = QuoteExtractionService(
         FakeLLM(

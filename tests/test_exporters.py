@@ -78,3 +78,32 @@ def test_reference_fields_and_case_id_are_shown_in_html() -> None:
     assert "Reference material fields" in html
     assert "官方参考材料字段适配说明" in html
     assert "reference_case_09" in html
+
+
+def test_multi_candidate_csv_and_html_keep_alternatives_separate() -> None:
+    first = SnowballQuote(
+        raw_text="二选一",
+        structure_name="方案一",
+        knock_out_barrier=0.96,
+    )
+    second = SnowballQuote(
+        raw_text="二选一",
+        structure_name="方案二",
+        knock_out_barrier=1.01,
+    )
+    result = ExtractionResult(
+        status=ExtractionStatus.SUCCESS,
+        product_type=ProductType.SNOWBALL,
+        classification_reason="snowball alternatives",
+        quote=first,
+        quote_candidates=[first, second],
+    )
+
+    rendered = ExportBundle().render_all(result)
+
+    rows = list(csv.DictReader(StringIO(rendered["quote_table.csv"])))
+    assert len(rows) == 2
+    assert rows[0]["knock_out_barrier"] == "96%"
+    assert rows[1]["knock_out_barrier"] == "101%"
+    assert "Quote alternatives" in rendered["report.html"]
+    assert "Candidate 2" in rendered["report.html"]

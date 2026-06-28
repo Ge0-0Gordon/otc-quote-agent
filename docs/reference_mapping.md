@@ -31,6 +31,8 @@
 
 | 官方案例 | Sample Data | 处理状态 |
 |---|---|---|
+| 案例 1–5：图片询价表 | `sample_data/reference_case_01_*.txt` 至 `reference_case_05_*.txt` | Snowball，多方案，部分支持 |
+| 案例 6：凤凰/DCN 图片 | `sample_data/reference_case_06_phoenix_dcn_unsupported.txt` | Unsupported |
 | 案例 9：沪深300限亏雪球 | `sample_data/reference_case_09_limited_loss_snowball.txt` | Snowball，支持 |
 | 案例 11：中证1000 DCN | `sample_data/reference_case_11_dcn_unsupported.txt` | Unsupported |
 | 案例 12：中证500美式鲨鱼鳍 | `sample_data/reference_case_12_sharkfin_unsupported.txt` | Unsupported |

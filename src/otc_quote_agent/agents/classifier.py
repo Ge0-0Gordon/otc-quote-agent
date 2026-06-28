@@ -25,6 +25,7 @@ class ProductClassifier:
 
     SUPPORTED_KEYWORDS: dict[ProductType, tuple[str, ...]] = {
         ProductType.SNOWBALL: (
+            "欧式雪球",
             "限亏雪球",
             "经典雪球",
             "欧式早利",
@@ -102,7 +103,12 @@ class ProductClassifier:
                 reason=f"Detected unsupported product: {labels}",
             )
 
-        snowball_priority_terms = ("限亏雪球", "经典雪球", "欧式早利")
+        snowball_priority_terms = (
+            "欧式雪球",
+            "限亏雪球",
+            "经典雪球",
+            "欧式早利",
+        )
         priority_hits = [term for term in snowball_priority_terms if term in normalized]
         if priority_hits:
             return ClassificationResult(

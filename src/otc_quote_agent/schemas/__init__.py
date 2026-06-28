@@ -3,6 +3,7 @@
 from otc_quote_agent.schemas.common import (
     BaseQuote,
     EvidenceItem,
+    FieldMetadata,
     IssueSeverity,
     ProductType,
     SourceType,
@@ -19,6 +20,7 @@ from otc_quote_agent.schemas.products import (
 __all__ = [
     "BaseQuote",
     "EvidenceItem",
+    "FieldMetadata",
     "EuropeanOptionQuote",
     "ExtractionResult",
     "ExtractionStatus",

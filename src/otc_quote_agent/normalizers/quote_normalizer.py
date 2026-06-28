@@ -88,6 +88,7 @@ class QuoteNormalizer:
         self._normalize_underlyings(data)
         if data.get("evidence") is None:
             data["evidence"] = []
+        self._normalize_reference_notional(data)
         self._normalize_reference_coupon_terms(data)
         self._fallback_lockout_period(data)
         for field in self.NUMBER_FIELDS:
@@ -125,6 +126,20 @@ class QuoteNormalizer:
         return NormalizationResult(data=data, issues=issues)
 
     @staticmethod
+    def _normalize_reference_notional(data: dict[str, Any]) -> None:
+        raw_text = data.get("raw_text")
+        if not isinstance(raw_text, str):
+            return
+        match = re.search(
+            r"(?:名义本金|notional)[^\d]{0,30}"
+            r"(\d+(?:\.\d+)?\s*(?:w|W|万|亿|mn|mm|million|m|k))",
+            raw_text,
+            re.IGNORECASE,
+        )
+        if match:
+            data["notional"] = match.group(1)
+
+    @staticmethod
     def _normalize_reference_coupon_terms(data: dict[str, Any]) -> None:
         raw_text = data.get("raw_text")
         if not isinstance(raw_text, str):
@@ -135,10 +150,9 @@ class QuoteNormalizer:
             "absolute_rebate": r"(?:绝对返息|绝反)[^%\d]{0,20}(\d+(?:\.\d+)?)\s*[%％]",
         }
         for field, pattern in labeled_patterns.items():
-            if data.get(field) in (None, ""):
-                match = re.search(pattern, raw_text, re.IGNORECASE)
-                if match:
-                    data[field] = f"{match.group(1)}%"
+            match = re.search(pattern, raw_text, re.IGNORECASE)
+            if match:
+                data[field] = f"{match.group(1)}%"
 
         primary_coupon = re.search(
             r"敲出\s*(?:&|＆|和)\s*红利票息[^%\d]{0,30}(\d+(?:\.\d+)?)\s*[%％]",
@@ -147,6 +161,19 @@ class QuoteNormalizer:
         )
         if primary_coupon:
             data["coupon_rate"] = f"{primary_coupon.group(1)}%"
+            return
+
+        explicit_coupon = re.search(
+            r"(?:票息|coupon|红利)[^%\d]{0,30}\d+(?:\.\d+)?\s*[%％]",
+            raw_text,
+            re.IGNORECASE,
+        )
+        barrier_decrement = re.search(
+            r"递减[^%\d]{0,10}\d+(?:\.\d+)?\s*[%％]",
+            raw_text,
+        )
+        if barrier_decrement and explicit_coupon is None:
+            data["coupon_rate"] = None
             return
 
         if data.get("coupon_rate") not in (None, ""):
@@ -161,16 +188,19 @@ class QuoteNormalizer:
 
     @staticmethod
     def _fallback_lockout_period(data: dict[str, Any]) -> None:
-        if data.get("lockout_period") not in (None, ""):
-            return
         raw_text = data.get("raw_text")
         if not isinstance(raw_text, str):
             return
         match = re.search(r"从第\s*(\d+)\s*个月开始观察", raw_text)
-        if match is None:
-            match = re.search(r"锁\s*(\d+)\s*(?:M|个月|月)?", raw_text, re.IGNORECASE)
         if match:
             data["lockout_period"] = f"{int(match.group(1))}M"
+            return
+        match = re.search(r"锁\s*(\d+)\s*(?:M|个月|月)?", raw_text, re.IGNORECASE)
+        if match:
+            data["lockout_period"] = f"{int(match.group(1))}M"
+            return
+        if data.get("lockout_period") not in (None, ""):
+            return
 
     def _normalize_observation_dates(
         self,
@@ -324,6 +354,24 @@ class QuoteNormalizer:
         text = str(value).strip().casefold()
         if re.fullmatch(r"\d+\s*[dmyw]", text):
             return text.replace(" ", "").upper()
+        chinese_months = {
+            "一": 1,
+            "二": 2,
+            "三": 3,
+            "四": 4,
+            "五": 5,
+            "六": 6,
+            "七": 7,
+            "八": 8,
+            "九": 9,
+            "十": 10,
+        }
+        chinese_match = re.search(
+            r"(?:前|第)?([一二三四五六七八九十])个?月",
+            text,
+        )
+        if chinese_match:
+            return f"{chinese_months[chinese_match.group(1)]}M"
         patterns = (
             (r"(\d+)\s*-?\s*(?:个月|月|months?|mos?)", "M"),
             (r"(\d+)\s*-?\s*(?:年|years?|yrs?)", "Y"),

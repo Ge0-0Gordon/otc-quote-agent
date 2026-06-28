@@ -3,6 +3,7 @@
 from otc_quote_agent.parsers.document_parser import (
     DocumentParseError,
     DocumentParser,
+    InputLimitError,
     ParsedDocument,
     ScannedPdfError,
     UnsupportedDocumentError,
@@ -11,6 +12,7 @@ from otc_quote_agent.parsers.document_parser import (
 __all__ = [
     "DocumentParseError",
     "DocumentParser",
+    "InputLimitError",
     "ParsedDocument",
     "ScannedPdfError",
     "UnsupportedDocumentError",

@@ -25,6 +25,7 @@ class SourceType(str, Enum):
     DOCX = "docx"
     XLSX = "xlsx"
     PDF = "pdf"
+    EML = "eml"
 
 
 class IssueSeverity(str, Enum):
@@ -57,6 +58,17 @@ class ValidationIssue(BaseModel):
     severity: IssueSeverity
     code: str
     message: str
+
+
+class FieldMetadata(BaseModel):
+    """System-derived traceability for one extracted business field."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_text: str | None = None
+    extraction_method: str
+    confidence: float = Field(ge=0, le=1)
+    normalized: bool = False
 
 
 class BaseQuote(BaseModel):
@@ -96,6 +108,7 @@ class BaseQuote(BaseModel):
     raw_text: str = ""
     confidence: float | None = Field(default=None, ge=0, le=1)
     evidence: list[EvidenceItem] = Field(default_factory=list)
+    field_metadata: dict[str, FieldMetadata] = Field(default_factory=dict)
     missing_fields: list[str] = Field(default_factory=list)
     validation_errors: list[ValidationIssue] = Field(default_factory=list)
     warnings: list[ValidationIssue] = Field(default_factory=list)
@@ -107,6 +120,7 @@ class BaseQuote(BaseModel):
             exclude={
                 "raw_text",
                 "evidence",
+                "field_metadata",
                 "missing_fields",
                 "validation_errors",
                 "warnings",

@@ -62,3 +62,11 @@ def test_official_unsupported_products_take_precedence(text: str) -> None:
     result = ProductClassifier().classify(text)
 
     assert result.product_type is ProductType.UNSUPPORTED
+
+
+def test_european_snowball_name_takes_priority_over_generic_european() -> None:
+    result = ProductClassifier().classify(
+        "欧式雪球，期限24个月，敲入65%，敲出100%"
+    )
+
+    assert result.product_type is ProductType.SNOWBALL

@@ -24,5 +24,6 @@ class ExtractionResult(BaseModel):
     classification_reason: str
     source_summary: str | None = None
     quote: QuoteModel | None = None
+    quote_candidates: list[QuoteModel] = Field(default_factory=list)
     review_questions: list[str] = Field(default_factory=list)
     processing_metadata: dict[str, Any] = Field(default_factory=dict)

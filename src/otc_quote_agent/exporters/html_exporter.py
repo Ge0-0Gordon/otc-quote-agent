@@ -30,6 +30,7 @@ class HTMLExporter:
             sections.extend(
                 [
                     self._quote_table(result),
+                    self._candidate_tables(result),
                     self._issues(result),
                     self._evidence(result),
                     self._review_questions(result),
@@ -99,6 +100,20 @@ class HTMLExporter:
                 f"<td>{self._escape(format_display_value(field, value))}</td></tr>"
             )
         return "<section><h2>Normalized quote</h2><table>" + "".join(rows) + "</table></section>"
+
+    def _candidate_tables(self, result: ExtractionResult) -> str:
+        if not result.quote_candidates:
+            return ""
+        sections = ["<section><h2>Quote alternatives</h2>"]
+        for index, quote in enumerate(result.quote_candidates, start=1):
+            rows = "".join(
+                f"<tr><th>{self._escape(field)}</th>"
+                f"<td>{self._escape(format_display_value(field, value))}</td></tr>"
+                for field, value in quote.business_fields().items()
+            )
+            sections.append(f"<h3>Candidate {index}</h3><table>{rows}</table>")
+        sections.append("</section>")
+        return "".join(sections)
 
     def _issues(self, result: ExtractionResult) -> str:
         assert result.quote is not None
